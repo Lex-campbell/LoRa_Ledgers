@@ -4,7 +4,7 @@ import {
 } from "@interledger/open-payments";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
+import { redisSet, redisGet } from "./store.js";
 
 // Load private key for authentication
 export const privateKeyPath = path.join(process.cwd(), "private.key");
@@ -12,11 +12,49 @@ export const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 
 // Sender and receiver wallets
 export const eur = "https://ilp.interledger-test.dev/7a641094"; // Sender (EUR)
-export const zar = "https://ilp.interledger-test.dev/yolo2"; // Receiver (ZAR)
 
 // Helper function to load private key
 export const loadPrivateKey = (keyPath) => {
   return fs.readFileSync(path.join(process.cwd(), keyPath), "utf8");
+};
+
+// Function to run code every 5 minutes (300,000 milliseconds)
+// This function sets up a recurring task to rotate access tokens
+// It returns a function that can be used to stop the scheduled task if needed (unused)
+export const tokenRotationScheduler = (client) => {
+  // Run the token rotation code
+  const rotateToken = async () => {
+    try {
+      const rotatedToken = await rotateAccessToken(
+        client,
+        await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL"),
+        await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN")
+      );
+
+      console.log("Rotated Token Response:", rotatedToken);
+
+      // Update the access token in Redis with the rotated token
+      await redisSet(
+        "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL",
+        rotatedToken.access_token.manage
+      );
+      await redisSet(
+        "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN",
+        rotatedToken.access_token.value
+      );
+    } catch (error) {
+      console.error("Error rotating token:", error);
+    }
+  };
+
+  // Initial call
+  rotateToken();
+
+  // Set up interval to call the function every 30 seconds
+  const intervalId = setInterval(rotateToken, 300000); // 5 minutes = 300,000 milliseconds
+
+  // Return a function to stop the interval if needed
+  return () => clearInterval(intervalId);
 };
 
 // Helper function to create authenticated client

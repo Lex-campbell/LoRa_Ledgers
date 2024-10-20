@@ -30,6 +30,7 @@ import {
   createOutgoingPayment,
   createQuoteGrant,
   rotateAccessToken,
+  tokenRotationScheduler,
   createClient,
   eur,
   privateKey,
@@ -139,6 +140,10 @@ app.post("/payment/outgoing/eur", async (req, res) => {
       // userId not really required for MVP stuff
       return res.status(400).json({ error: "Invalid request body" });
     }
+    // Enforce userId 1
+    if (userId !== "1") {
+      return res.status(403).json({ error: "Access denied" });
+    }
     console.log(`Preparing to send ${amount} EUR for user ${userId}`);
 
     // GET WALLET ADDRESS
@@ -188,25 +193,6 @@ app.post("/payment/outgoing/eur", async (req, res) => {
 
     console.log("Outgoing Payment Response:", outgoingPayment);
 
-    // ROTATE ACCESS TOKEN
-    const rotatedToken = await rotateAccessToken(
-      client,
-      await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL"),
-      await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN")
-    );
-
-    console.log("Rotated Token Response:", rotatedToken);
-
-    // Update the access token in Redis with the rotated token
-    await redisSet(
-      "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL",
-      rotatedToken.access_token.manage
-    );
-    await redisSet(
-      "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN",
-      rotatedToken.access_token.value
-    );
-
     // res.json({
     //   message: "Outgoing payment created successfully",
     //   paymentDetails: outgoingPayment,
@@ -236,10 +222,14 @@ app.get("/balance/eur", async (req, res) => {
     return res.status(400).json({ error: "userId is required" });
   }
 
-  const walletUrl = `https://wallet.interledger-test.dev/_next/data/T7-4_x5MO9bq8wKjHZj-b/account/${userId}.json?accountId=${userId}`;
+  // Check if userId is 1, otherwise return an error
+  if (userId !== "1") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
   try {
     const response = await fetch(
-      "https://wallet.interledger-test.dev/_next/data/T7-4_x5MO9bq8wKjHZj-b/account/121494fc-575f-4f2c-a25a-f4e56cf414bc.json?accountId=121494fc-575f-4f2c-a25a-f4e56cf414bc",
+      "https://wallet.interledger-test.dev/_next/data/tUxWJF9fs4Kwq6It24LHf/account/121494fc-575f-4f2c-a25a-f4e56cf414bc.json?accountId=121494fc-575f-4f2c-a25a-f4e56cf414bc",
       {
         headers: {
           accept: "*/*",
@@ -269,12 +259,23 @@ app.get("/balance/eur", async (req, res) => {
     }
 
     const data = await response.json();
-    res.json(data);
+    const { assetCode, balance } = data.pageProps.account;
+    res.json({
+      pageProps: {
+        account: {
+          assetCode,
+          balance,
+        },
+      },
+    });
   } catch (error) {
     console.error("Error fetching balance:", error);
     res.status(500).json({ error: "Failed to fetch balance" });
   }
 });
+
+// Start the token rotation scheduler
+tokenRotationScheduler(client);
 
 // Start the server
 app.listen(port, () => {
