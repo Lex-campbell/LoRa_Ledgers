@@ -99,10 +99,9 @@ This architecture enables rural users to access global financial services withou
 - Manages user accounts and transactions
 
 ### Telegram Bot
-- Use Telegram app to interact with the bot
-- Monitor system status
-- Manage user accounts
-- View transaction history
+- Use Telegram app to interact with the system
+- Monitor user balances
+- Create transactions
 - Perform administrative tasks
 
 ## Contributing
@@ -137,3 +136,8 @@ This project was developed as part of the 2024 Interledger hackathon, aiming to 
 
 - Being able to roll this out to merchants, who can accept payments from customers, and send funds to their bank accounts using fingerprint authentication instead of credit cards or smartphones. 
 - KYC and KYB process to prevent abuse and fraud
+
+## Team Members
+
+- [Byron Coetsee](https://www.linkedin.com/in/byroncoetsee/)
+- [Lex Campbell](https://www.linkedin.com/in/lexcamp/)
