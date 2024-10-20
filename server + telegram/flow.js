@@ -44,7 +44,6 @@ const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 
 // Sender and receiver wallets
 const eur = "https://ilp.interledger-test.dev/7a641094"; // Sender (EUR)
-const zar = "https://ilp.interledger-test.dev/yolo2"; // Receiver (ZAR)
 
 export const client = await createClient(
   eur,
@@ -67,7 +66,6 @@ if (1 == 2) {
     client,
     eur,
     { assetCode: "EUR", assetScale: 2, value: "1000" },
-    // { assetCode: "ZAR", assetScale: 2, value: "200" },
     "123"
   );
   if (isPendingGrant(grant_incomingPayment)) {
