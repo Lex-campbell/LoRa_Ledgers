@@ -4,6 +4,16 @@
 
 LoRa Finger is designed to bring banking services to unbanked populations in rural areas with limited internet connectivity. This project uses LoRa technology, fingerprint authentication, and the Interledger Protocol to enable secure financial transactions without the need for traditional banking infrastructure, internet access, or smartphones.
 
+## Project Links
+- [Presentation](https://docs.google.com/presentation/d/1aF7vJZvEuzK8EpxCkDC1QGUGaDHIS9G-RVnuXwsI3x4/edit#slide=id.g2e5d273ee9f_0_23)
+- [Video Demonstration](https://youtu.be/0hlodROddWo)
+
+## Team
+
+Name: LoRa Ledgers
+- Lex Campbell
+- Byron Coetsee
+
 ## Features
 
 - Fingerprint-based user authentication in place of tradtional credit card or banking app
@@ -55,6 +65,26 @@ LoRa Finger works in conjunction with the LoRa HTTP project, which acts as a gat
 3. Follow the on-screen prompts to enter amounts (if applicable)
 4. Place your finger on the fingerprint sensor when prompted
 5. Wait for the LoRa transmission and response
+
+## Learnings
+
+- The fingerprint sensor is finnicky and requires calibration.
+- The OLED display is small and hard to see in bright sunlight.
+- LoRa is great for long range and low power
+- Payment authentication flows on Interledger Open Payments
+
+## Achievements
+
+- We learned a lot about the Interledger Protocol and Open Payments
+- We learned a lot about the Heltec WiFi LoRa 32 V3 board
+- We learned a lot about the fingerprint sensor (it was a nightmare)
+
+## The Future
+
+- being able to roll this out to merchants, who can accept payments from customers, and send funds to their bank accounts using fingerprint authentication instead of credit cards or smartphones. 
+
+- KYC and KYB process to prevent abuse and fraud
+
 
 ## Contributing
 
