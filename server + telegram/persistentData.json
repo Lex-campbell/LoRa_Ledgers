@@ -1,6 +1,6 @@
 {
-  "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN": "C7B20A14E10CFF693A93",
-  "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL": "https://auth.interledger-test.dev/interact/7e94f607-2163-45ea-a79b-272f1eb5216f/04FEDE93CA909229?clientName=6a1c0b1&clientUri=https%3A%2F%2Filp.interledger-test.dev%2F7a641094",
-  "EUR_OUTGOING_PAYMENT_GRANT_CONTINUE_URI": "https://auth.interledger-test.dev/continue/1cbd1790-461b-459b-9b89-d122f040fd39",
-  "INTERACTION_REFERENCE": "17d8fad7-39fc-4dd7-9f0b-b60604572708"
+  "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN": "F845FB960FDDA2BFCF98",
+  "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL": "https://auth.interledger-test.dev/token/0829b579-6c43-4ba0-8c57-1c96db255b76",
+  "EUR_OUTGOING_PAYMENT_GRANT_CONTINUE_URI": "https://auth.interledger-test.dev/continue/985f9ca9-5eea-4e3e-a3ca-4d2cfff6c368",
+  "INTERACTION_REFERENCE": "bd0daa80-904f-451d-b0d7-d5d88e0ac5bc"
 }

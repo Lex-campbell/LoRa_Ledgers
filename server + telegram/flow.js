@@ -1,3 +1,26 @@
+// ============================================================================
+// ============================================================================
+//
+//                           ATTENTION: SCRATCH FILE
+//
+// ============================================================================
+// ============================================================================
+//
+// This file is a scratch pad for development and testing purposes only.
+// It contains experimental code, temporary implementations, and work-in-progress.
+//
+// DO NOT RELY ON ANY CODE OR FUNCTIONALITY IN THIS FILE
+//
+// The contents of this file are subject to change without notice and may be
+// deleted or significantly altered at any time. It is not maintained as part
+// of the main codebase and should be ignored for all practical purposes.
+//
+// If you have stumbled upon this file, please disregard its contents and refer
+// to the official, production-ready code in the main project structure.
+//
+// ============================================================================
+// ============================================================================
+
 import {
   createAuthenticatedClient,
   isPendingGrant,

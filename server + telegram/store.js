@@ -1,3 +1,17 @@
+// This file simulates a simple key-value store using a JSON file for persistence.
+// It provides functions to read and write data, mimicking basic Redis-like functionality.
+// The data is stored in a local file named 'persistentData.json'.
+
+// Key features:
+// 1. Loads existing data from the file on startup
+// 2. Provides 'redisSet' function to update values and save to file
+// 3. Provides 'redisGet' function to retrieve values (implementation not shown)
+// 4. Handles file read/write errors
+// 5. Initializes with default values if the file doesn't exist or is corrupted
+
+// This approach allows for persistent storage between program runs without
+// requiring an actual Redis server, suitable for development or simple applications.
+
 import fs from "fs";
 import path from "path";
 

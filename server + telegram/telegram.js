@@ -1,5 +1,10 @@
+// This file contains a simple implementation of a Telegram bot for Open Payments
+// It is not the core offering, but rather a demonstration of an alternative interface
+// The bot shows how live data updates can be accessed through a chat interface
+// It uses basic commands to interact with the Open Payments system
+// This serves as a proof of concept for integrating Open Payments with messaging platforms
+
 import TelegramBot from "node-telegram-bot-api";
-import { redisGet, redisSet } from "./store.js";
 import fetch from "node-fetch";
 
 const bot = new TelegramBot("7520876386:AAGi1FeV9XC6wdHZyc6EVpvuRW7DPHZBgjU", {

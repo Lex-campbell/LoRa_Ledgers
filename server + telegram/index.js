@@ -1,3 +1,25 @@
+// ============================================================================
+//                       Open Payments Express Server
+// ============================================================================
+//
+// This is the core Express server that handles network requests and interfaces
+// with the first layer of libraries, which in turn interact with the
+// Interledger Protocol (ILP).
+//
+// Key features:
+// - Handles incoming HTTP requests for Open Payments operations
+// - Interfaces with library functions for ILP interactions
+// - Manages authentication and authorization flows
+// - Processes incoming and outgoing payments
+// - Handles quote creation and management
+// - Implements token rotation and management
+//
+// This server acts as the primary interface between client applications
+// and the underlying Open Payments / ILP infrastructure, providing a
+// RESTful API for financial operations in a web-based environment.
+//
+// ============================================================================
+
 import express from "express";
 import { redisSet, redisGet } from "./store.js";
 import {
@@ -24,6 +46,9 @@ const client = await createClient(
 // Middleware to parse JSON bodies
 app.use(express.json());
 
+// This route handles the root endpoint ("/") and processes incoming interaction references
+// It stores the interaction reference, continues the outgoing payment grant,
+// and updates the access token information in the Redis store
 app.get("/", async (req, res) => {
   const { interact_ref } = req.query;
   if (interact_ref) {
@@ -71,6 +96,10 @@ app.get("/", async (req, res) => {
   res.send("Interaction reference and payment token received and stored.");
 });
 
+// This endpoint handles the interaction reference and payment token
+// It stores the interaction reference in Redis and continues the outgoing payment grant
+// The flow: Store interaction reference -> Continue grant -> Store access token
+// Error handling is implemented to catch and report any issues during the process
 app.get("/auth/outgoing/eur", async (req, res) => {
   const grant_outgoingPayment = await createOutgoingPaymentGrant(
     client,
@@ -95,6 +124,11 @@ app.get("/auth/outgoing/eur", async (req, res) => {
   res.redirect(grant_outgoingPayment.interact.redirect);
 });
 
+// This endpoint handles the creation of outgoing payments
+// It processes the payment request, creates a quote, initiates the payment,
+// and rotates the access token for security
+// The flow: Create quote -> Create outgoing payment -> Rotate access token
+// Error handling is implemented to catch and report any issues during the process
 app.post("/payment/outgoing/eur", async (req, res) => {
   try {
     // Extract data from the request body
@@ -181,6 +215,9 @@ app.post("/payment/outgoing/eur", async (req, res) => {
   }
 });
 
+// This endpoint fetches the balance for a given user
+// It constructs the appropriate URL using the provided userId
+// Sends a fetch request to the wallet server and returns the balance data
 app.get("/balance/eur", async (req, res) => {
   const userId = req.query.userId;
   if (!userId) {
