@@ -4,7 +4,7 @@ import {
 } from "@interledger/open-payments";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
+import { redisGet, redisSet } from "./store";
 
 // Load private key for authentication
 export const privateKeyPath = path.join(process.cwd(), "private.key");
@@ -18,6 +18,42 @@ export const zar = "https://ilp.interledger-test.dev/yolo2"; // Receiver (ZAR)
 export const loadPrivateKey = (keyPath) => {
   return fs.readFileSync(path.join(process.cwd(), keyPath), "utf8");
 };
+
+// Function to handle token rotation timer
+// export const startTokenRotationTimer = (client) => {
+//   const rotateToken = async () => {
+//     try {
+//       const rotatedToken = await rotateAccessToken(
+//         client,
+//         await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL"),
+//         await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN")
+//       );
+
+//       console.log("Rotated Token Response:", rotatedToken);
+
+//       // Update the access token in Redis with the rotated token
+//       await redisSet(
+//         "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL",
+//         rotatedToken.access_token.manage
+//       );
+//       await redisSet(
+//         "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN",
+//         rotatedToken.access_token.value
+//       );
+//     } catch (error) {
+//       console.error("Failed to rotate access token:", error);
+//     }
+//   };
+
+//   // Initial rotation
+//   // rotateToken();
+
+//   // Set up interval for rotation every 30 seconds
+//   const intervalId = setInterval(rotateToken, 30000);
+
+//   // Return a function to stop the timer if needed
+//   return () => clearInterval(intervalId);
+// };
 
 // Helper function to create authenticated client
 export const createClient = async (walletAddressUrl, privateKey, keyId) => {

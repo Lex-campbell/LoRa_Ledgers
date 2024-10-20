@@ -30,6 +30,7 @@ import {
   createOutgoingPayment,
   createQuoteGrant,
   rotateAccessToken,
+  // startTokenRotationTimer,
   createClient,
   eur,
   privateKey,
@@ -88,6 +89,9 @@ app.get("/", async (req, res) => {
     );
     console.log("Access Token Manage URL:", continueGrant.access_token.manage);
     console.log("Expires In:", continueGrant.access_token.expires_in);
+
+    // Start the token rotation timer
+    // startTokenRotationTimer(client);
   } else {
     console.log(
       "Unable to retrieve access token information from continueGrant"
@@ -189,23 +193,23 @@ app.post("/payment/outgoing/eur", async (req, res) => {
     console.log("Outgoing Payment Response:", outgoingPayment);
 
     // ROTATE ACCESS TOKEN
-    const rotatedToken = await rotateAccessToken(
-      client,
-      await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL"),
-      await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN")
-    );
+    // const rotatedToken = await rotateAccessToken(
+    //   client,
+    //   await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL"),
+    //   await redisGet("EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN")
+    // );
 
-    console.log("Rotated Token Response:", rotatedToken);
+    // console.log("Rotated Token Response:", rotatedToken);
 
-    // Update the access token in Redis with the rotated token
-    await redisSet(
-      "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL",
-      rotatedToken.access_token.manage
-    );
-    await redisSet(
-      "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN",
-      rotatedToken.access_token.value
-    );
+    // // Update the access token in Redis with the rotated token
+    // await redisSet(
+    //   "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN_MANAGE_URL",
+    //   rotatedToken.access_token.manage
+    // );
+    // await redisSet(
+    //   "EUR_OUTGOING_PAYMENT_GRANT_ACCESS_TOKEN",
+    //   rotatedToken.access_token.value
+    // );
 
     // res.json({
     //   message: "Outgoing payment created successfully",
