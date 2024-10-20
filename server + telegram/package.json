@@ -1,0 +1,19 @@
+{
+  "name": "rural",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@interledger/open-payments": "^6.13.2",
+    "express": "^4.21.1",
+    "node-fetch": "^3.3.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "redis": "^4.7.0"
+  }
+}
