@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../lora_finger_only"
 		}
 	],
 	"settings": {

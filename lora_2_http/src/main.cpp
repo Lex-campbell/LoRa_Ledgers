@@ -115,7 +115,7 @@ void setup() {
   
   display.clearBuffer();
   display.drawStr(0, 10, "Connected to WiFi");
-  display.drawStr(0, 20, "Waiting for LoRa");
+  display.drawStr(0, 20, "Waiting for LoRa message");
   display.sendBuffer();
 }
 
@@ -164,6 +164,7 @@ void loop() {
       // Send request to API
       if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
+        http.setTimeout(20000); // Set timeout to 20 seconds
         String endpoint;
         if (String(action).equals("balance")) {
           endpoint = String(baseUrl) + "/balance/eur?userId=" + userId;
@@ -185,12 +186,20 @@ void loop() {
         String responseToSend = "";
 
         if (httpResponseCode > 0) {
-          String response = http.getString();
+          // Use WiFiClient to read response in chunks
+          WiFiClient * stream = http.getStreamPtr();
+          String response = "";
+          while (http.connected() && (stream->available() || http.getSize() == -1)) {
+            if (stream->available()) {
+              response += stream->readStringUntil('\n');
+            }
+          }
+          
           Serial.println("HTTP Response code: " + String(httpResponseCode));
           Serial.println("Response: " + response);
 
           // Parse JSON response
-          DynamicJsonDocument doc(2048); // Increased from 1024 to 2048
+          JsonDocument doc;
           DeserializationError error = deserializeJson(doc, response);
 
           if (error) {
