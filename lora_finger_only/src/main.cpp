@@ -253,7 +253,7 @@ void sendLoRaMessage(uint16_t userId, String amount, String action) {
     bool responseReceived = false;
     String responseStr;
 
-    while (millis() - startTime < 10000) { // Wait for up to 10 seconds
+    while (millis() - startTime < 30000) { // Wait for up to 10 seconds
       if(receivedFlag) {
         enableInterrupt = false;
         receivedFlag = false;
