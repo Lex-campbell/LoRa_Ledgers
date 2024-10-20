@@ -10,6 +10,16 @@ The project consists of four main components:
 3. Server: An intermediary that wraps the Interledger API
 4. Telegram Bot: An interface for remote management and monitoring
 
+## Project Links
+- [Presentation](https://docs.google.com/presentation/d/1aF7vJZvEuzK8EpxCkDC1QGUGaDHIS9G-RVnuXwsI3x4/edit#slide=id.g2e5d273ee9f_0_23)
+- [Video Demonstration](https://youtu.be/0hlodROddWo)
+
+## Team
+
+Name: LoRa Ledgers
+- Lex Campbell
+- Byron Coetsee
+
 ## System Architecture
 
 1. LoRa Finger devices: Deployed in rural areas, these devices capture user fingerprints and transaction details.
@@ -109,3 +119,21 @@ This project was developed as part of the 2024 Interledger hackathon, aiming to 
 - `/lora_2_http`: LoRa HTTP Gateway code
 - `/server`: Server code wrapping Interledger API
 - `/telegram_bot`: Telegram bot for remote management
+
+## Learnings
+
+- The fingerprint sensor is finnicky and requires calibration.
+- The OLED display is small and hard to see in bright sunlight.
+- LoRa is great for long range and low power
+- Payment authentication flows on Interledger Open Payments
+
+## Achievements
+
+- We learned a lot about the Interledger Protocol and Open Payments
+- We learned a lot about the Heltec WiFi LoRa 32 V3 board
+- We learned a lot about the fingerprint sensor (it was a nightmare)
+
+## The Future
+
+- Being able to roll this out to merchants, who can accept payments from customers, and send funds to their bank accounts using fingerprint authentication instead of credit cards or smartphones. 
+- KYC and KYB process to prevent abuse and fraud
