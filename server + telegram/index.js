@@ -37,6 +37,8 @@ import {
 const app = express();
 const port = 3344;
 
+// For MVP, I've hardcoded the client ID and private key
+// In prod, these would be attached to the tokanised fingerprint we get back from the field devices
 const client = await createClient(
   eur,
   privateKey,
@@ -205,9 +207,18 @@ app.post("/payment/outgoing/eur", async (req, res) => {
       rotatedToken.access_token.value
     );
 
+    // res.json({
+    //   message: "Outgoing payment created successfully",
+    //   paymentDetails: outgoingPayment,
+    // });
     res.json({
-      message: "Outgoing payment created successfully",
-      paymentDetails: outgoingPayment,
+      paymentDetails: {
+        receiveAmount: {
+          value: outgoingPayment.receiveAmount.value,
+          assetCode: outgoingPayment.receiveAmount.assetCode,
+        },
+        failed: outgoingPayment.failed,
+      },
     });
   } catch (error) {
     console.error("Error creating outgoing payment:", error);
