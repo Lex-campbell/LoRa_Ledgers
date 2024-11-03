@@ -18,6 +18,7 @@ public:
     static constexpr const char* STATE_FAILED = "failed";
     static constexpr const char* STATE_CANCELLED = "cancelled";
     static constexpr const char* STATE_EXPIRED = "expired";
+    static constexpr const char* STATE_ERROR = "error";
 
     static Transaction create(double amount, const String& currency, const String& from, const String& to);
     static String encode(const Transaction& tx);

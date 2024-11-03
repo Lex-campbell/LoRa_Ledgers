@@ -1,4 +1,5 @@
 #include "transaction.h"
+#include "utils.h"
 
 Transaction Transaction::create(double amount, const String& currency, const String& from, const String& to) {
     Transaction tx;
@@ -47,12 +48,9 @@ Transaction Transaction::decode(const String& jsonString) {
     
     Transaction tx;
     if (error) {
-        tx.id = "Error";
-        tx.amount = 0;
-        tx.currency = "ERROR";
-        tx.from = "Error";
-        tx.to = "Error";
-        tx.state = STATE_FAILED;
+        tx.state = STATE_ERROR;
+
+        SendTelegram("Failed to parse transaction JSON:\n\n" + jsonString + "\n\n" + String(error.c_str()));
     } else {
         tx.id = doc["id"].as<String>();
         tx.amount = doc["amount"].as<double>();

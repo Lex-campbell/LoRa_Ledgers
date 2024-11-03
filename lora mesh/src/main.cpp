@@ -216,11 +216,16 @@ void showTemporary(String data, unsigned long duration) {
     }
 }
 
+void startListening() {
+    lastReceivedMessage = Message();
+    isTransmitting = false;
+	console("Listening...");
+    Lora.startReceive();
+    digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
+}
+
 // SENDING
 void send(Message msg) {
-    // int randomDelay = random(100, 1000); // Random delay between 100-1000ms
-    // delay(randomDelay);
-
     String jsonString = Message::encode(msg);
     String compressedString = Message::compress(jsonString);
     console("Sending:\n" + jsonString + "\nOriginal size: " + jsonString.length() + " bytes\nCompressed size: " + compressedString.length() + " bytes");
@@ -235,30 +240,55 @@ void send(Message msg) {
     }
 }
 
-void sendTx() {
-    double amount = random(1, 1000); // Random amount between 1-1000
-    Transaction tx = Transaction::create(amount, "ZAR", "", "YOLO"); // Empty from/to for now
-    pendingTransaction = tx;
-    Message msg = Message::create("", tx);
-    send(msg);
-}
-
 void sendComplete() {
 	if (transmissionState != RADIOLIB_ERR_NONE) {
 		console("send error: " + String(transmissionState));
 	}
 
-	isTransmitting = false;
-    Lora.startReceive();
-    digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
+    startListening();
+	// isTransmitting = false;
+    // Lora.startReceive();
+    // digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
+}
+
+// TX HANDLING
+void completePendingTx(Transaction tx) {
+    show(tx.humanStringState());
+    pendingTransaction = Transaction();
+    // startListening();
+}
+
+// Forward or process a transaction
+void forwardOrProcess(Transaction tx) {
+    if (WiFi.status() == WL_CONNECTED) {
+        // Process the transaction
+        console("Processing:\n" + tx.humanString());
+        show(tx.humanString());
+        tx = ProcessTransaction(tx);
+        console("Processed:\n" + tx.humanString());
+
+        if (pendingTransaction.id != tx.id) {
+            // if the in-scope tx is not the on-device pending tx, send a response
+            show("Responding:\n" + tx.humanString());
+            Message msg = Message::create("", tx);
+            send(msg);
+        } else {
+            completePendingTx(tx);
+        }
+    } else {
+        // Forward the same (or new) message if not connected to WiFi
+        Message msg = lastReceivedMessage;
+        if (msg.id.length() == 0) {
+            msg = Message::create("", tx);
+            show("Broadcasting:\n" + msg.tx.humanString());
+        } else {
+            show("Forwarding:\n" + msg.tx.humanString());
+        }
+        send(msg);
+    }
 }
 
 // RECEIVING
-void startListening() {
-	console("Listening...");
-    Lora.startReceive();
-    digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
-}
 
 void receive() {
     Lora.standby();
@@ -285,29 +315,30 @@ void receive() {
 
     if (pendingTransaction.id == lastReceivedMessage.tx.id) {
         console("Receieved response for pending transaction: " + lastReceivedMessage.tx.humanString());
-        show(lastReceivedMessage.tx.humanStringState());
-        pendingTransaction = Transaction();
+        completePendingTx(lastReceivedMessage.tx);
         startListening();
         return;
     }
 
-    if (WiFi.status() == WL_CONNECTED) {
-        // Lora.standby();
-        console("Processing:\n" + lastReceivedMessage.tx.humanString());
-        show(lastReceivedMessage.tx.humanString());
-        Transaction tx = ProcessTransaction(lastReceivedMessage.tx);
-        console("Processed:\n" + tx.humanString());
-        show("Responding:\n" + tx.humanString());
-        Message msg = Message::create("", tx);
-        send(msg);
-    } else {
-        // Forward the same message if not connected to WiFi
-        show("Forwarding:\n" + lastReceivedMessage.tx.humanString());
-        send(lastReceivedMessage);
-    }
+    forwardOrProcess(lastReceivedMessage.tx);
 }
 
 // INPUT
+
+// Temporary function to send a random transaction
+void sendTx() {
+    Transaction tx;
+    if (pendingTransaction.id.length() > 0) {
+        tx = pendingTransaction;
+    } else {
+        double amount = random(1, 1000); // Random amount between 1-1000
+        tx = Transaction::create(amount, "ZAR", "", "YOLO"); // Empty from/to for now
+        pendingTransaction = tx;
+    }
+    
+    forwardOrProcess(tx);
+}
+
 void handleButtonPressed() {
     // Check if the PRG button is pressed
     if (digitalRead(PRG_BUTTON_PIN) == LOW) {

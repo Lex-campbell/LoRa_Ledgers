@@ -1,5 +1,6 @@
 #include "message.h"
 #include "unishox/unishox2.h"
+#include "utils.h"
 
 // const String ACTION_NONE = "None";
 // const String ACTION_BALANCE = "Balance";
@@ -36,7 +37,6 @@ String Message::encode(const Message& msg) {
     doc["id"] = msg.id;
     doc["sender"] = msg.sender;
     doc["message"] = msg.message;
-    // doc["action"] = msg.action;
     doc["tx"] = Transaction::encode(msg.tx);
     String jsonString;
     serializeJson(doc, jsonString);
@@ -49,13 +49,13 @@ Message Message::decode(const String& jsonString) {
     
     Message msg;
     if (error) {
-        msg.sender = "Error";
-        msg.message = "Failed to parse JSON";
+        msg.message = "Failed to parse message JSON";
+
+        SendTelegram("Failed to parse message JSON:\n\n" + jsonString + "\n\n" + String(error.c_str()));
     } else {
         msg.id = doc["id"].as<String>();
         msg.sender = doc["sender"].as<String>();
         msg.message = doc["message"].as<String>();
-        // msg.action = doc["action"].as<String>();
         msg.tx = Transaction::decode(doc["tx"].as<String>());
     }
     return msg;
