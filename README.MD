@@ -1,3 +1,5 @@
+> **Note:** For latest mesh and transaction handling code, see the 'lora mesh' folder. It currently doesn't have the merchant features like numerical inputs and fingerprint capturing. Those will be merged once we have communication working in a stable form at 2km+ ranges.
+
 # LoRa Ledgers: Banking the Unbanked
 
 ## Overview
