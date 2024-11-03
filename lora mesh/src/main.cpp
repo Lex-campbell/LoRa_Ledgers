@@ -9,33 +9,17 @@
 #include "payments.h"
 #include "message_buffer.h"
 #include "lora.h"
-
-#define OLED_RESET      21 
-#define OLED_SDA        17
-#define OLED_SCL        18
-
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, /* clock=*/ OLED_SCL, /* data=*/ OLED_SDA, /* reset=*/ OLED_RESET);   // All Boards without Reset of the Display
+#include "utils.h"
+#include "oled.h"
 
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
 
-unsigned int counter = 0;
-int LED = 35;
+static const unsigned int counter = 0;
+static const int LED = 35;
 
-unsigned long lastHeartbeatTime = 0;
-unsigned long heartbeatInterval = 60000;
-unsigned long lastScreenRefreshTime = 0;
-unsigned long screenRefreshInterval = 3000;
-
-// Message lastReceivedMessage;
-Transaction pendingTransaction;
-
-void logo() {
-    display.clearBuffer();
-    display.drawXBM(0, 5, logo_width, logo_height, (const unsigned char *)bitty_logo);
-    display.sendBuffer();
-    delay(1000);
-}
+unsigned long LAST_HEARTBEAT_TIME = 0;
+static const unsigned long HEARTBEAT_INTERVAL = 60000;
 
 void WIFISetUp(void) {
     // Set WiFi to station mode and disconnect from an AP if it was previously connected
@@ -63,9 +47,7 @@ void WIFISetUp(void) {
         delay(100);
 
         Serial.printf("Trying network: %s\n", currentNetwork.ssid);
-        display.clearBuffer();
-        display.drawStr(0, 10, ("Trying: " + String(currentNetwork.ssid)).c_str());
-        display.sendBuffer();
+        show("Trying: " + String(currentNetwork.ssid));
 
         // Try this network for 3 seconds
         byte attempts = 0;
@@ -84,21 +66,14 @@ void WIFISetUp(void) {
         }
     }
 
-    display.clearBuffer();
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("Connected.");
-
-        display.clearBuffer();
-        display.drawStr(0, 10, "Connected.");
-        display.sendBuffer();
+        show("Connected.");
     } else {
         Serial.println("Failed to connect.");
-        display.clearBuffer();
-        display.drawStr(0, 10, "Failed to connect.");
-        display.sendBuffer();
+        show("Failed to connect.");
     }
-    display.drawStr(0, 20, "WiFi setup done");
-    display.sendBuffer();
+    show("WiFi setup done");
     delay(500);
 }
 
@@ -117,62 +92,6 @@ void blink() {
         digitalWrite(LED, LOW);
         delay(50);
     }
-}
-
-void console(String data) {
-    Serial.println(data.c_str());
-}
-
-void show(String data) {
-    int y = 8;
-    int lineHeight = 8;
-    int maxWidth = 128; // Display width in pixels
-    
-    display.clearBuffer();
-
-    while (data.length() > 0 && y < 64) { // Stop if we reach bottom of display
-        String line = "";
-        int charWidth = 6; // Approximate width of each character
-        int charsPerLine = maxWidth / charWidth;
-        
-        // Check for newline first
-        int newlinePos = data.indexOf('\n');
-        if (newlinePos != -1 && newlinePos < charsPerLine) {
-            // Print up to newline
-            line = data.substring(0, newlinePos);
-            data = data.substring(newlinePos + 1);
-        } else {
-            // Word wrap
-            if (data.length() > charsPerLine) {
-                // Look for last space within width limit
-                int lastSpace = data.substring(0, charsPerLine).lastIndexOf(' ');
-                if (lastSpace != -1) {
-                    line = data.substring(0, lastSpace);
-                    data = data.substring(lastSpace + 1);
-                } else {
-                    // No space found, just cut at width
-                    line = data.substring(0, charsPerLine);
-                    data = data.substring(charsPerLine);
-                }
-            } else {
-                // Remaining text fits on one line
-                line = data;
-                data = "";
-            }
-        }
-        
-        display.drawStr(0, y, line.c_str());
-        y += lineHeight;
-    }
-    
-    int16_t rssi = lora.getRSSI();
-    float signalStrength = (abs(rssi) - 30) / 70.0 * 100;
-    signalStrength = 100.0f - signalStrength;  // Invert the scale
-    signalStrength = max(0.0f, min(100.0f, signalStrength));
-    
-    display.drawStr(0, 64, ("Signal: " + String(int(signalStrength)) + "%").c_str());
-    display.sendBuffer();
-    lastScreenRefreshTime = millis();
 }
 
 void startListening() {
@@ -297,8 +216,8 @@ void handleButtonPressed() {
 
 // LIFECYCLE
 void sendHeartbeat() {
-    if (millis() - lastHeartbeatTime >= heartbeatInterval) { // Send heartbeat every 60 seconds
-        lastHeartbeatTime = millis();
+    if (millis() - LAST_HEARTBEAT_TIME >= HEARTBEAT_INTERVAL) { // Send heartbeat every 60 seconds
+        LAST_HEARTBEAT_TIME = millis();
 
         console("Sending heartbeat");
         Message msg = Message::create("heartbeat");
@@ -314,16 +233,16 @@ void sendHeartbeat() {
     }
 }
 
-void refreshScreen() {
-    if (millis() - lastScreenRefreshTime >= screenRefreshInterval) {
-        lastScreenRefreshTime = millis();
-        if (pendingTransaction.state == Transaction::STATE_PENDING) {
-            show("(O. O)\n\n" + pendingTransaction.humanStringState());
-        } else {
-            show("(-. -)  zzz");
-        }
-    }
-}
+// void refreshScreen() {
+//     if (millis() - LAST_SCREEN_REFRESH_TIME >= SCREEN_REFRESH_INTERVAL) {
+//         LAST_SCREEN_REFRESH_TIME = millis();
+//         if (pendingTransaction.state == Transaction::STATE_PENDING) {
+//             show("(O. O)\n\n" + pendingTransaction.humanStringState());
+//         } else {
+//             show("(-. -)  zzz", false);
+//         }
+//     }
+// }
 
 void setup(void) {
     Serial.begin(115200);
@@ -331,6 +250,7 @@ void setup(void) {
     pinMode(VEXT_CTRL, OUTPUT); 
     digitalWrite(VEXT_CTRL, LOW); // Enable Vext power
 
+    // Initialize display
     display.begin();
     display.setFont(u8g2_font_NokiaSmallPlain_te);
     
@@ -357,6 +277,6 @@ void setup(void) {
 
 void loop() {
     handleButtonPressed();
-    refreshScreen();
+    updateScreen();
     lora.handleLoop();
 }

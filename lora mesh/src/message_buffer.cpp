@@ -52,3 +52,4 @@ void MessageBuffer::AddMessage(const Message& msg) {
 
 // Global instance
 MessageBuffer messageBuffer;
+Transaction pendingTransaction;

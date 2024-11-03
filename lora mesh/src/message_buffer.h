@@ -22,5 +22,6 @@ public:
 };
 
 extern MessageBuffer messageBuffer;
+extern Transaction pendingTransaction;
 
 #endif // MESSAGE_BUFFER_H

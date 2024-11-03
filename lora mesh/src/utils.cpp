@@ -20,3 +20,7 @@ void SendTelegram(String message) {
 
     http.end();
 }
+
+void console(String data) {
+    Serial.println(data.c_str());
+}
