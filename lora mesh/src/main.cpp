@@ -15,9 +15,6 @@
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
 
-static const unsigned int counter = 0;
-static const int LED = 35;
-
 unsigned long LAST_HEARTBEAT_TIME = 0;
 static const unsigned long HEARTBEAT_INTERVAL = 60000;
 
@@ -77,30 +74,8 @@ void WIFISetUp(void) {
     delay(500);
 }
 
-String getTimeString() {
-    char timeStr[9];
-    time_t now = time(nullptr);
-    struct tm* timeinfo = localtime(&now);
-    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", timeinfo);
-    return String(timeStr);
-}
-
-void blink() {
-    for (int i = 0; i < 3; i++) {
-        digitalWrite(LED, HIGH);
-        delay(50);
-        digitalWrite(LED, LOW);
-        delay(50);
-    }
-}
-
-void startListening() {
-    console("Listening...");
-    lora.startListening();
-    digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
-}
-
 // SENDING
+
 void send(Message msg) {
     String jsonString = Message::encode(msg);
     String compressedString = Message::compress(jsonString);
@@ -111,16 +86,16 @@ void send(Message msg) {
 }
 
 void sendComplete() {
-    startListening();
+    lora.startListening();
 }
 
 // TX HANDLING
+
 void completePendingTx(Transaction tx) {
     show(tx.humanStringState());
     pendingTransaction = Transaction();
 }
 
-// Forward or process a transaction
 void forwardOrProcess(const Message& receivedMessage) {
     Transaction tx = receivedMessage.tx;
     if (WiFi.status() == WL_CONNECTED) {
@@ -152,6 +127,7 @@ void forwardOrProcess(const Message& receivedMessage) {
 }
 
 // RECEIVING
+
 void onReceive(String str) {
     digitalWrite(LED, LOW);  // Turn off LED when not in receiving mode
 
@@ -162,20 +138,20 @@ void onReceive(String str) {
     if (messageBuffer.IsSeen(receivedMessage)) {
         console("Message already seen, ignoring");
         blink();
-        startListening();
+        lora.startListening();
         return;
     }
 
     if (receivedMessage.tx.id.length() == 0) {
         show(receivedMessage.message);
-        startListening();
+        lora.startListening();
         return;
     }
 
     if (pendingTransaction.id == receivedMessage.tx.id) {
         console("Receieved response for pending transaction: " + receivedMessage.tx.humanString());
         completePendingTx(receivedMessage.tx);
-        startListening();
+        lora.startListening();
         return;
     }
 
@@ -215,6 +191,7 @@ void handleButtonPressed() {
 }
 
 // LIFECYCLE
+
 void sendHeartbeat() {
     if (millis() - LAST_HEARTBEAT_TIME >= HEARTBEAT_INTERVAL) { // Send heartbeat every 60 seconds
         LAST_HEARTBEAT_TIME = millis();
@@ -232,17 +209,6 @@ void sendHeartbeat() {
         }
     }
 }
-
-// void refreshScreen() {
-//     if (millis() - LAST_SCREEN_REFRESH_TIME >= SCREEN_REFRESH_INTERVAL) {
-//         LAST_SCREEN_REFRESH_TIME = millis();
-//         if (pendingTransaction.state == Transaction::STATE_PENDING) {
-//             show("(O. O)\n\n" + pendingTransaction.humanStringState());
-//         } else {
-//             show("(-. -)  zzz", false);
-//         }
-//     }
-// }
 
 void setup(void) {
     Serial.begin(115200);

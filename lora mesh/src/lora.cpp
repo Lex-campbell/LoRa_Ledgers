@@ -1,4 +1,5 @@
 #include "lora.h"
+#include "utils.h"
 
 void onInterruptStatic() {
     lora.setFlag();
@@ -16,7 +17,7 @@ void LoRa::begin() {
 
     int state = radio->begin();
     if (state != RADIOLIB_ERR_NONE) {
-        Serial.println("LoRa initialization failed with code: " + String(state));
+        console("LoRa initialization failed with code: " + String(state));
         return;
     }
 
@@ -42,19 +43,19 @@ void LoRa::setReceiveCallback(void (*callback)(String)) {
 }
 
 void LoRa::startListening() {
-    Serial.println("Listening...");
+    console("Listening...");
     isTransmitting = false;
     int state = radio->startReceive();
-    digitalWrite(35, HIGH);
+    digitalWrite(LED, HIGH);
 }
 
 void LoRa::send(String data) {
-    Serial.println("Starting transmission...");  // Debug
+    console("Starting transmission...");
     transmissionState = radio->startTransmit(data);
     if (transmissionState == RADIOLIB_ERR_NONE) {
         isTransmitting = true;
     } else {
-        Serial.println("Failed to start transmission");  // Debug
+        console("Failed to start transmission");
     }
 }
 
@@ -66,14 +67,14 @@ void LoRa::handleLoop() {
     if (isIdle) {
         return;
     }
-    Serial.println("Handling LoRa loop");
+    console("Handling LoRa loop");
     isIdle = true;
 
     if (isTransmitting) {
         if (transmissionState != RADIOLIB_ERR_NONE) {
-            Serial.println("Transmission error: " + String(transmissionState));
+            console("Transmission error: " + String(transmissionState));
         } else {
-            Serial.println("Transmission completed");
+            console("Transmission completed");
         }
         startListening();
     } else {
@@ -85,7 +86,7 @@ void LoRa::handleLoop() {
                 onReceiveCallback(str);
             }
         } else {
-            Serial.println("Read error: " + String(state));
+            console("Read error: " + String(state));
         }
     }
 }
