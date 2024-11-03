@@ -37,7 +37,7 @@ Available commands:
 // Balance command
 bot.onText(/\/balance/, async (msg) => {
   const chatId = msg.chat.id;
-  const userId = msg.from.id.toString();
+  const userId = 1; // msg.from.id.toString();
 
   try {
     const response = await fetch(

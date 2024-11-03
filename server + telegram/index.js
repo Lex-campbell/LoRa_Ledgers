@@ -141,9 +141,9 @@ app.post("/payment/outgoing/eur", async (req, res) => {
       return res.status(400).json({ error: "Invalid request body" });
     }
     // Enforce userId 1
-    if (userId !== "1") {
-      return res.status(403).json({ error: "Access denied" });
-    }
+    // if (userId !== "1") {
+    //   return res.status(403).json({ error: "Access denied" });
+    // }
     console.log(`Preparing to send ${amount} EUR for user ${userId}`);
 
     // GET WALLET ADDRESS
@@ -216,6 +216,7 @@ app.post("/payment/outgoing/eur", async (req, res) => {
 // It constructs the appropriate URL using the provided userId
 // Sends a fetch request to the wallet server and returns the balance data
 app.get("/balance/eur", async (req, res) => {
+  console.log("Fetching balance");
   const userId = req.query.userId;
   if (!userId) {
     // not really required for MVP stuff
@@ -223,13 +224,13 @@ app.get("/balance/eur", async (req, res) => {
   }
 
   // Check if userId is 1, otherwise return an error
-  if (userId !== "1") {
-    return res.status(403).json({ error: "Access denied" });
-  }
+  // if (userId !== "1") {
+  //   return res.status(403).json({ error: "Access denied" });
+  // }
 
   try {
     const response = await fetch(
-      "https://wallet.interledger-test.dev/_next/data/tUxWJF9fs4Kwq6It24LHf/account/121494fc-575f-4f2c-a25a-f4e56cf414bc.json?accountId=121494fc-575f-4f2c-a25a-f4e56cf414bc",
+      "https://wallet.interledger-test.dev/_next/data/kCBqn1OBrPWgqTnATf0-B/account/121494fc-575f-4f2c-a25a-f4e56cf414bc.json?accountId=121494fc-575f-4f2c-a25a-f4e56cf414bc",
       {
         headers: {
           accept: "*/*",
@@ -260,6 +261,7 @@ app.get("/balance/eur", async (req, res) => {
 
     const data = await response.json();
     const { assetCode, balance } = data.pageProps.account;
+    console.log("Balance:", balance);
     res.json({
       pageProps: {
         account: {

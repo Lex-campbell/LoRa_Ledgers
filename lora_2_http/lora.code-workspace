@@ -1,36 +1,45 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../lora_finger_only"
-		}
-	],
-	"settings": {
-		"files.associations": {
-			"*.json": "json",
-			"*.tcc": "cpp",
-			"deque": "cpp",
-			"string": "cpp",
-			"unordered_map": "cpp",
-			"vector": "cpp",
-			"system_error": "cpp",
-			"new": "cpp",
-			"optional": "cpp",
-			"istream": "cpp",
-			"ostream": "cpp",
-			"array": "cpp",
-			"functional": "cpp",
-			"tuple": "cpp",
-			"type_traits": "cpp",
-			"utility": "cpp",
-			"unordered_set": "cpp",
-			"string_view": "cpp",
-			"initializer_list": "cpp",
-			"random": "cpp",
-			"sstream": "cpp",
-			"*.bak": "c"
-		}
-	}
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../lora_finger_only"
+    },
+    {
+      "path": "../server + telegram"
+    },
+    {
+      "path": "../mesh"
+    },
+    {
+      "path": "../../../Programming/IO/lora"
+    }
+  ],
+  "settings": {
+    "files.associations": {
+      "*.json": "json",
+      "*.tcc": "cpp",
+      "deque": "cpp",
+      "string": "cpp",
+      "unordered_map": "cpp",
+      "vector": "cpp",
+      "system_error": "cpp",
+      "new": "cpp",
+      "optional": "cpp",
+      "istream": "cpp",
+      "ostream": "cpp",
+      "array": "cpp",
+      "functional": "cpp",
+      "tuple": "cpp",
+      "type_traits": "cpp",
+      "utility": "cpp",
+      "unordered_set": "cpp",
+      "string_view": "cpp",
+      "initializer_list": "cpp",
+      "random": "cpp",
+      "sstream": "cpp",
+      "*.bak": "c"
+    }
+  }
 }
