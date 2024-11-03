@@ -246,9 +246,6 @@ void sendComplete() {
 	}
 
     startListening();
-	// isTransmitting = false;
-    // Lora.startReceive();
-    // digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
 }
 
 // TX HANDLING
@@ -424,21 +421,29 @@ void setup(void) {
         while (true);
     }
 
-    // 915.0
-    if (Lora.setFrequency(868.0) == RADIOLIB_ERR_INVALID_FREQUENCY) {
-        console("Selected value is invalid for FREQUENCY");
-        while (true);
-    }
+    // Frequency: 137MHz to 1020MHz. Higher frequency = shorter range but better obstacle penetration
+    // For most regions, common frequencies are: 433MHz, 868MHz (Europe), 915MHz (USA)
+    Lora.setFrequency(868.0);
 
-    if (Lora.setSpreadingFactor(10) == RADIOLIB_ERR_INVALID_SPREADING_FACTOR) {
-        console("Selected value is invalid for SPREADING_FACTOR!");
-        while (true);
-    }
+    // Spreading Factor: 5-12. Higher = longer range but slower data rate
+    // Each increment doubles air time. SF7-SF12 are most common
+    Lora.setSpreadingFactor(8);
 
-    if (Lora.setCodingRate(5) == RADIOLIB_ERR_INVALID_CODING_RATE) {
-        console("Selected value is invalid for CODING_RATE!");
-        while (true);
-    }
+    // Coding Rate: 5-8. Higher = better error correction but more air time
+    // Represents redundancy ratio of 4/5 to 4/8. Higher values better for noisy environments
+    Lora.setCodingRate(7);
+
+    // Bandwidth: 7.8-500kHz. Lower = longer range but slower data rate
+    // Common values: 125, 250, 500 kHz. Lower bandwidth also means better sensitivity
+    Lora.setBandwidth(125.0);
+
+    // Output Power: 2-22 dBm. Higher = longer range but more power consumption
+    // Max allowed power varies by region. 22dBm (~158mW) is max for most modules
+    Lora.setOutputPower(22);
+
+    // Sync Word: 1 byte (0x00-0xFF). Must match between transmitter and receiver
+    // Acts as a network identifier. Default is 0x12 for private networks
+    Lora.setSyncWord(0x45);  // hex for 69
 
     // set the function that will be called
     // when new packet is received
