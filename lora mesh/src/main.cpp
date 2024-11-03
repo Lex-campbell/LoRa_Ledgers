@@ -6,53 +6,28 @@
 #include <Wire.h>
 #include "WiFi.h"
 #include "message.h"
-// #include "toast.cpp"
 #include "payments.h"
 #include "message_buffer.h"
-// SX1262 has the following connections:
-#define LORA_NSS_PIN    8
-#define LORA_RESET_PIN  12
-#define LORA_DIO1_PIN   14
-#define LORA_BUSY_PIN   13
+#include "lora.h"
 
 #define OLED_RESET      21 
 #define OLED_SDA        17
 #define OLED_SCL        18
 
 U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, /* clock=*/ OLED_SCL, /* data=*/ OLED_SDA, /* reset=*/ OLED_RESET);   // All Boards without Reset of the Display
-// U8G2_SSD1306_128X64_NONAME_F_HW_I2C display(U8G2_R0, /* reset=*/ OLED_RESET);
-
-// Toast toast(display);
-
-#define RADIO_DIO_1     14
-#define RADIO_NSS       8
-#define RADIO_RESET     12
-#define RADIO_BUSY      13
-
-#define LORA_CLK        9
-#define LORA_MISO       11
-#define LORA_MOSI       10
 
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
 
-SX1262 Lora = new Module(/*cs*/LORA_NSS_PIN, /*irq*/LORA_DIO1_PIN, /*rst*/LORA_RESET_PIN, /*gpio*/LORA_BUSY_PIN);
-
-int transmissionState = RADIOLIB_ERR_NONE;
-
 unsigned int counter = 0;
 int LED = 35;
-
-// flag to indicate that a packet was sent or received
-bool isIdle = true;
-bool isTransmitting = false;
 
 unsigned long lastHeartbeatTime = 0;
 unsigned long heartbeatInterval = 60000;
 unsigned long lastScreenRefreshTime = 0;
 unsigned long screenRefreshInterval = 3000;
 
-Message lastReceivedMessage;
+// Message lastReceivedMessage;
 Transaction pendingTransaction;
 
 void logo() {
@@ -127,12 +102,6 @@ void WIFISetUp(void) {
     delay(500);
 }
 
-// this function is called when a complete packet is transmitted or received by the module
-// IMPORTANT: this function MUST be 'void' type and MUST NOT have any arguments!
-void setFlag(void) {
-    isIdle = false;
-}
-
 String getTimeString() {
     char timeStr[9];
     time_t now = time(nullptr);
@@ -196,7 +165,7 @@ void show(String data) {
         y += lineHeight;
     }
     
-    int16_t rssi = Lora.getRSSI(true);
+    int16_t rssi = lora.getRSSI();
     float signalStrength = (abs(rssi) - 30) / 70.0 * 100;
     signalStrength = 100.0f - signalStrength;  // Invert the scale
     signalStrength = max(0.0f, min(100.0f, signalStrength));
@@ -206,21 +175,9 @@ void show(String data) {
     lastScreenRefreshTime = millis();
 }
 
-void showTemporary(String data, unsigned long duration) {
-    show(data);
-    delay(duration);
-    if (lastReceivedMessage.message.length() > 0) {
-        show(lastReceivedMessage.message);
-    } else {
-        show("No messages received yet");
-    }
-}
-
 void startListening() {
-    lastReceivedMessage = Message();
-    isTransmitting = false;
-	console("Listening...");
-    Lora.startReceive();
+    console("Listening...");
+    lora.startListening();
     digitalWrite(LED, HIGH);  // Turn on LED when in receiving mode
 }
 
@@ -228,23 +185,13 @@ void startListening() {
 void send(Message msg) {
     String jsonString = Message::encode(msg);
     String compressedString = Message::compress(jsonString);
-    console("Sending:\n" + jsonString + "\nOriginal size: " + jsonString.length() + " bytes\nCompressed size: " + compressedString.length() + " bytes");
+    console("Sending:\n" + jsonString);// + "\nOriginal size: " + jsonString.length() + " bytes\nCompressed size: " + compressedString.length() + " bytes");
     
-    transmissionState = Lora.startTransmit(compressedString);
-    if (transmissionState == RADIOLIB_ERR_NONE) {
-		isTransmitting = true;
-        messageBuffer.AddMessage(msg);
-        console("Message size: " + String(compressedString.length()) + " bytes");
-    } else {
-        console("send unsuccessful - " + String(transmissionState));
-    }
+    lora.send(compressedString);
+    messageBuffer.AddMessage(msg);
 }
 
 void sendComplete() {
-	if (transmissionState != RADIOLIB_ERR_NONE) {
-		console("send error: " + String(transmissionState));
-	}
-
     startListening();
 }
 
@@ -252,11 +199,11 @@ void sendComplete() {
 void completePendingTx(Transaction tx) {
     show(tx.humanStringState());
     pendingTransaction = Transaction();
-    // startListening();
 }
 
 // Forward or process a transaction
-void forwardOrProcess(Transaction tx) {
+void forwardOrProcess(const Message& receivedMessage) {
+    Transaction tx = receivedMessage.tx;
     if (WiFi.status() == WL_CONNECTED) {
         // Process the transaction
         console("Processing:\n" + tx.humanString());
@@ -274,7 +221,7 @@ void forwardOrProcess(Transaction tx) {
         }
     } else {
         // Forward the same (or new) message if not connected to WiFi
-        Message msg = lastReceivedMessage;
+        Message msg = receivedMessage;
         if (msg.id.length() == 0) {
             msg = Message::create("", tx);
             show("Broadcasting:\n" + msg.tx.humanString());
@@ -286,38 +233,34 @@ void forwardOrProcess(Transaction tx) {
 }
 
 // RECEIVING
+void onReceive(String str) {
+    digitalWrite(LED, LOW);  // Turn off LED when not in receiving mode
 
-void receive() {
-    Lora.standby();
-	digitalWrite(LED, LOW);  // Turn off LED when not in receiving mode
-
-	String str;
-	int state = Lora.readData(str);
     String decompressedString = Message::decompress(str);
-    lastReceivedMessage = Message::decode(decompressedString);
+    Message receivedMessage = Message::decode(decompressedString);
     console("Received:\n" + decompressedString + "\nOriginal size: " + str.length() + " bytes\nDecompressed size: " + decompressedString.length() + " bytes");
 
-    if (messageBuffer.IsSeen(lastReceivedMessage)) {
-        console("Message already seen, ignoring:\n" + decompressedString);
+    if (messageBuffer.IsSeen(receivedMessage)) {
+        console("Message already seen, ignoring");
         blink();
         startListening();
         return;
     }
 
-    if (lastReceivedMessage.tx.id.length() == 0) {
-        show(lastReceivedMessage.message);
+    if (receivedMessage.tx.id.length() == 0) {
+        show(receivedMessage.message);
         startListening();
         return;
     }
 
-    if (pendingTransaction.id == lastReceivedMessage.tx.id) {
-        console("Receieved response for pending transaction: " + lastReceivedMessage.tx.humanString());
-        completePendingTx(lastReceivedMessage.tx);
+    if (pendingTransaction.id == receivedMessage.tx.id) {
+        console("Receieved response for pending transaction: " + receivedMessage.tx.humanString());
+        completePendingTx(receivedMessage.tx);
         startListening();
         return;
     }
 
-    forwardOrProcess(lastReceivedMessage.tx);
+    forwardOrProcess(receivedMessage);
 }
 
 // INPUT
@@ -333,7 +276,7 @@ void sendTx() {
         pendingTransaction = tx;
     }
     
-    forwardOrProcess(tx);
+    forwardOrProcess(Message::create("", tx));
 }
 
 void handleButtonPressed() {
@@ -342,9 +285,6 @@ void handleButtonPressed() {
         // Debounce the button press
         delay(50);
         if (digitalRead(PRG_BUTTON_PIN) == LOW) {
-            
-            // String data = "Button pressed\n" + getTimeString();
-            // send(data, ACTION_PAY);
             sendTx();
 
             // Wait for the button to be released
@@ -401,76 +341,22 @@ void setup(void) {
     Serial.printf("ESP32ChipID=%04X", (uint16_t)(chipid>>32));  // print High 2 bytes
     Serial.printf("%08X\n", (uint32_t)chipid);  // print Low 4bytes.
 
-    // logo();
-
     if (chipid == 0xAC0D3B43CA48) {
         WIFISetUp();
     }
 
-    SPI.begin(LORA_CLK, LORA_MISO, LORA_MOSI, RADIO_NSS);
+    lora.begin();
+    lora.setReceiveCallback(onReceive);
 
-    int state = Lora.begin();
-
-    if (state == RADIOLIB_ERR_NONE) {
-        console("Lora Initialized!");
-		show("Lora Initialized!");
-    } else {
-        console("Lora failed, code " + String(state));
-		show("Lora failed, code:" + String(state));
-
-        while (true);
-    }
-
-    // Frequency: 137MHz to 1020MHz. Higher frequency = shorter range but better obstacle penetration
-    // For most regions, common frequencies are: 433MHz, 868MHz (Europe), 915MHz (USA)
-    Lora.setFrequency(868.0);
-
-    // Spreading Factor: 5-12. Higher = longer range but slower data rate
-    // Each increment doubles air time. SF7-SF12 are most common
-    Lora.setSpreadingFactor(8);
-
-    // Coding Rate: 5-8. Higher = better error correction but more air time
-    // Represents redundancy ratio of 4/5 to 4/8. Higher values better for noisy environments
-    Lora.setCodingRate(7);
-
-    // Bandwidth: 7.8-500kHz. Lower = longer range but slower data rate
-    // Common values: 125, 250, 500 kHz. Lower bandwidth also means better sensitivity
-    Lora.setBandwidth(125.0);
-
-    // Output Power: 2-22 dBm. Higher = longer range but more power consumption
-    // Max allowed power varies by region. 22dBm (~158mW) is max for most modules
-    Lora.setOutputPower(22);
-
-    // Sync Word: 1 byte (0x00-0xFF). Must match between transmitter and receiver
-    // Acts as a network identifier. Default is 0x12 for private networks
-    Lora.setSyncWord(0x45);  // hex for 69
-
-    // set the function that will be called
-    // when new packet is received
-    Lora.setDio1Action(setFlag);
-
-    // send the first packet on this node
     console("[SX1262] Sending first packet ... ");
-	show("Sending first packet..");
+    show("Sending first packet..");
 
     Message msg = Message::create("hello");
-	send(msg);
+    send(msg);
 }
 
 void loop() {
-	handleButtonPressed();
-    // sendHeartbeat();
+    handleButtonPressed();
     refreshScreen();
-
-    if (isIdle) {
-        delay(10);
-        return;
-    }
-    isIdle = true;
-
-    if (isTransmitting) {
-        sendComplete();
-    } else {
-        receive();
-    }
+    lora.handleLoop();
 }
