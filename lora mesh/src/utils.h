@@ -7,6 +7,9 @@
 
 #define LED 35
 
+#define TELEGRAM_BOT_TOKEN String("bot7520876386:AAGi1FeV9XC6wdHZyc6EVpvuRW7DPHZBgjU")
+#define TELEGRAM_CHAT_ID String("795879280")
+
 // Send a message to Telegram bot
 void SendTelegram(String message);
 

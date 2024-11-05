@@ -6,10 +6,10 @@ void SendTelegram(String message) {
     }
 
     HTTPClient http;
-    http.begin("https://api.telegram.org/bot7520876386:AAGi1FeV9XC6wdHZyc6EVpvuRW7DPHZBgjU/sendMessage");
+    http.begin("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage");
     http.addHeader("Content-Type", "application/json");
 
-    String jsonBody = "{\"chat_id\":\"795879280\",\"text\":\"" + message + "\"}";
+    String jsonBody = "{\"chat_id\":\"" + TELEGRAM_CHAT_ID + "\",\"text\":\"" + message + "\"}";
     int httpResponseCode = http.POST(jsonBody);
 
     if (httpResponseCode > 0) {

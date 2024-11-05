@@ -8,6 +8,7 @@
 #include "message.h"
 #include "payments.h"
 #include "message_buffer.h"
+#include <ArduinoJson.h>
 #include "lora.h"
 #include "utils.h"
 #include "oled.h"
@@ -31,7 +32,9 @@ void WIFISetUp(void) {
 
     Network networks[] = {
         {"🍑", "808808808"},
-        {"AckAck", "808808808"}
+        {"AckAck", "808808808"},
+        {"Stitch Guest", "please$titcharoundforlunch"},
+        {"LC iPhone", "spacetime"}
     };
     
     int networkIndex = 0;
@@ -98,7 +101,7 @@ void completePendingTx(Transaction tx) {
 
 void forwardOrProcess(const Message& receivedMessage) {
     Transaction tx = receivedMessage.tx;
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED && tx.id.length() > 0) {
         // Process the transaction
         console("Processing:\n" + tx.humanString());
         show(tx.humanString());
@@ -116,11 +119,10 @@ void forwardOrProcess(const Message& receivedMessage) {
     } else {
         // Forward the same (or new) message if not connected to WiFi
         Message msg = receivedMessage;
-        if (msg.id.length() == 0) {
-            msg = Message::create("", tx);
-            show("Broadcasting:\n" + msg.tx.humanString());
-        } else {
+        if (tx.id.length() > 0) {
             show("Forwarding:\n" + msg.tx.humanString());
+        } else {
+            show(msg.message);
         }
         send(msg);
     }
@@ -190,6 +192,88 @@ void handleButtonPressed() {
     }
 }
 
+// TELEGRAM
+
+String getTelegramMessages() {
+    if (WiFi.status() != WL_CONNECTED) {
+        return "";
+    }
+
+    static unsigned long lastMessageId = 0;
+    String response = "";
+    String messageId = "";
+
+    HTTPClient http;
+    
+    String url = "https://api.telegram.org/" + TELEGRAM_BOT_TOKEN + "/getUpdates";
+    if (lastMessageId > 0) {
+        url += "?offset=" + String(lastMessageId + 1);
+    }
+
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        
+        JsonDocument doc;
+        doc.clear();
+        DeserializationError error = deserializeJson(doc, payload);
+        
+        if (!error) {
+            JsonArray results = doc["result"].as<JsonArray>();
+            
+            for (JsonVariant result : results) {
+                lastMessageId = result["update_id"].as<unsigned long>();
+                
+                if (result["message"]["message_id"] && result["message"]["text"]) {
+                    messageId = String(result["message"]["message_id"].as<unsigned long>());
+                    response = result["message"]["text"].as<String>();
+                    break;
+                }
+            }
+        } else {
+            console("Failed to parse JSON response: " + String(error.c_str()));
+        }
+    }
+
+    http.end();
+
+    if (messageId.length() > 0 && response.length() > 0) {
+        return messageId + ":" + response;
+    }
+    return "";
+}
+
+void listenForTelegramMessages() {
+    if (WiFi.status() != WL_CONNECTED) {
+        return;
+    }
+
+    static unsigned long lastTelegramCheck = 0;
+    const unsigned long TELEGRAM_CHECK_INTERVAL = 1000;
+    
+    if (millis() - lastTelegramCheck < TELEGRAM_CHECK_INTERVAL) {
+        return;
+    }
+    
+    lastTelegramCheck = millis();
+
+    String response = getTelegramMessages();
+    
+    if (response.length() > 0) {
+        int colonPos = response.indexOf(':');
+        String messageId = response.substring(0, colonPos);
+        String messageText = response.substring(colonPos + 1);
+        
+        Message msg = Message::create(messageText);
+        msg.id = messageId;
+        
+        forwardOrProcess(msg);
+    }
+}
+
+
 // LIFECYCLE
 
 void sendHeartbeat() {
@@ -245,4 +329,5 @@ void loop() {
     handleButtonPressed();
     updateScreen();
     lora.handleLoop();
+    listenForTelegramMessages();
 }
