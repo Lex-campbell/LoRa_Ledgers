@@ -31,7 +31,10 @@ void WIFISetUp(void) {
 
     Network networks[] = {
         {"🍑", "808808808"},
-        {"AckAck", "808808808"}
+        {"AckAck", "808808808"},
+        {"Stitch Guest", "please$titcharoundforlunch"},
+        {"LC iPhone", "spacetime"}
+
     };
     
     int networkIndex = 0;

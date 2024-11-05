@@ -1,10 +1,12 @@
 Import("env")
 
+
 def run_upload(cmd, project_dir):
     import subprocess
     print(f"Executing: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=project_dir)
     return result.returncode == 0
+
 
 def build_all(source, target, env):
     import subprocess
@@ -12,7 +14,7 @@ def build_all(source, target, env):
 
     # Get the project directory
     project_dir = env.get("PROJECT_DIR")
-    
+
     # Define sequential commands
     sequential_commands = [
         ["pio", "run", "--target", "clean"],
@@ -21,14 +23,17 @@ def build_all(source, target, env):
         # ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-2"],
         # ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-3"]
     ]
-    
+
     # Define parallel upload commands
     upload_commands = [
-        ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-0001"],
+        ["pio", "run", "--target", "upload",
+            "--upload-port", "/dev/cu.usbserial-0001"],
         ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-2"],
-        ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-3"]
+        ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-3"],
+        ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-4"],
+        ["pio", "run", "--target", "upload", "--upload-port", "/dev/cu.usbserial-5"]
     ]
-    
+
     # Execute sequential commands first
     for cmd in sequential_commands:
         print(f"Executing: {' '.join(cmd)}")
@@ -36,7 +41,7 @@ def build_all(source, target, env):
         if result.returncode != 0:
             print(f"Command failed: {' '.join(cmd)}")
             env.Exit(1)
-    
+
     # Execute upload commands in parallel
     print("Starting parallel uploads...")
     with ThreadPoolExecutor() as executor:
@@ -47,10 +52,11 @@ def build_all(source, target, env):
             import time
             time.sleep(1)
         results = [future.result() for future in futures]
-        
+
     if not all(results):
         print("One or more upload commands failed")
         env.Exit(1)
+
 
 # Register the custom target
 env.AddCustomTarget(
