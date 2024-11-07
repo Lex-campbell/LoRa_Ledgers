@@ -1,5 +1,7 @@
 #include "lora.h"
 #include "utils.h"
+#include "message.h"
+#include "message_buffer.h"
 
 void onInterruptStatic() {
     lora.setFlag();
@@ -49,11 +51,15 @@ void LoRa::startListening() {
     digitalWrite(LED, HIGH);
 }
 
-void LoRa::send(String data) {
-    console("Starting transmission...");
-    transmissionState = radio->startTransmit(data);
+void LoRa::send(Message msg) {
+    String jsonString = Message::encode(msg);
+    String compressedString = Message::compress(jsonString);
+    console("Sending:\n" + jsonString);
+    
+    transmissionState = radio->startTransmit(compressedString);
     if (transmissionState == RADIOLIB_ERR_NONE) {
         isTransmitting = true;
+        messageBuffer.AddMessage(msg);
     } else {
         console("Failed to start transmission");
     }

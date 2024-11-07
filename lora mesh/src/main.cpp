@@ -12,6 +12,7 @@
 #include "lora.h"
 #include "utils.h"
 #include "oled.h"
+#include "telegram.h"
 
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
@@ -79,15 +80,6 @@ void WIFISetUp(void) {
 
 // SENDING
 
-void send(Message msg) {
-    String jsonString = Message::encode(msg);
-    String compressedString = Message::compress(jsonString);
-    console("Sending:\n" + jsonString);// + "\nOriginal size: " + jsonString.length() + " bytes\nCompressed size: " + compressedString.length() + " bytes");
-    
-    lora.send(compressedString);
-    messageBuffer.AddMessage(msg);
-}
-
 void sendComplete() {
     lora.startListening();
 }
@@ -112,7 +104,7 @@ void forwardOrProcess(const Message& receivedMessage) {
             // if the in-scope tx is not the on-device pending tx, send a response
             show("Responding:\n" + tx.humanString());
             Message msg = Message::create("", tx);
-            send(msg);
+            lora.send(msg);
         } else {
             completePendingTx(tx);
         }
@@ -124,7 +116,7 @@ void forwardOrProcess(const Message& receivedMessage) {
         } else {
             show(msg.message);
         }
-        send(msg);
+        lora.send(msg);
     }
 }
 
@@ -173,6 +165,7 @@ void sendTx() {
         pendingTransaction = tx;
     }
     
+    console("Calling forwardOrProcess:\n" + tx.humanString());
     forwardOrProcess(Message::create("", tx));
 }
 
@@ -182,97 +175,17 @@ void handleButtonPressed() {
         // Debounce the button press
         delay(50);
         if (digitalRead(PRG_BUTTON_PIN) == LOW) {
+            console("Button pressed - sending transaction");
             sendTx();
 
             // Wait for the button to be released
             while (digitalRead(PRG_BUTTON_PIN) == LOW) {
                 delay(10);
             }
+            console("Button released");
         }
     }
 }
-
-// TELEGRAM
-
-String getTelegramMessages() {
-    if (WiFi.status() != WL_CONNECTED) {
-        return "";
-    }
-
-    static unsigned long lastMessageId = 0;
-    String response = "";
-    String messageId = "";
-
-    HTTPClient http;
-    
-    String url = "https://api.telegram.org/" + TELEGRAM_BOT_TOKEN + "/getUpdates";
-    if (lastMessageId > 0) {
-        url += "?offset=" + String(lastMessageId + 1);
-    }
-
-    http.begin(url);
-    int httpCode = http.GET();
-
-    if (httpCode == HTTP_CODE_OK) {
-        String payload = http.getString();
-        
-        JsonDocument doc;
-        doc.clear();
-        DeserializationError error = deserializeJson(doc, payload);
-        
-        if (!error) {
-            JsonArray results = doc["result"].as<JsonArray>();
-            
-            for (JsonVariant result : results) {
-                lastMessageId = result["update_id"].as<unsigned long>();
-                
-                if (result["message"]["message_id"] && result["message"]["text"]) {
-                    messageId = String(result["message"]["message_id"].as<unsigned long>());
-                    response = result["message"]["text"].as<String>();
-                    break;
-                }
-            }
-        } else {
-            console("Failed to parse JSON response: " + String(error.c_str()));
-        }
-    }
-
-    http.end();
-
-    if (messageId.length() > 0 && response.length() > 0) {
-        return messageId + ":" + response;
-    }
-    return "";
-}
-
-void listenForTelegramMessages() {
-    if (WiFi.status() != WL_CONNECTED) {
-        return;
-    }
-
-    static unsigned long lastTelegramCheck = 0;
-    const unsigned long TELEGRAM_CHECK_INTERVAL = 1000;
-    
-    if (millis() - lastTelegramCheck < TELEGRAM_CHECK_INTERVAL) {
-        return;
-    }
-    
-    lastTelegramCheck = millis();
-
-    String response = getTelegramMessages();
-    
-    if (response.length() > 0) {
-        int colonPos = response.indexOf(':');
-        String messageId = response.substring(0, colonPos);
-        String messageText = response.substring(colonPos + 1);
-        
-        Message msg = Message::create(messageText);
-        msg.id = messageId;
-        
-        forwardOrProcess(msg);
-    }
-}
-
 
 // LIFECYCLE
 
@@ -282,7 +195,7 @@ void sendHeartbeat() {
 
         console("Sending heartbeat");
         Message msg = Message::create("heartbeat");
-        send(msg);
+        lora.send(msg);
 
         // Blink LED 3 times quickly
         for (int i = 0; i < 3; i++) {
@@ -311,7 +224,8 @@ void setup(void) {
     Serial.printf("ESP32ChipID=%04X", (uint16_t)(chipid>>32));  // print High 2 bytes
     Serial.printf("%08X\n", (uint32_t)chipid);  // print Low 4bytes.
 
-    if (chipid == 0xAC0D3B43CA48) {
+    // 0xAC0D3B43CA48 -- main gateway
+    if (chipid == 0x5CB963DAB734 || chipid == 0xAC0D3B43CA48) {
         WIFISetUp();
     }
 
@@ -322,7 +236,7 @@ void setup(void) {
     show("Sending first packet..");
 
     Message msg = Message::create("hello");
-    send(msg);
+    lora.send(msg);
 }
 
 void loop() {

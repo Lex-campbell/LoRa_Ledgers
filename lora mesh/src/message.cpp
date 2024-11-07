@@ -1,15 +1,6 @@
 #include "message.h"
 #include "unishox/unishox2.h"
-#include "utils.h"
-
-// const String ACTION_NONE = "None";
-// const String ACTION_BALANCE = "Balance";
-// const String ACTION_START_TX = "StartTx";
-// const String ACTION_PAY = "Pay";
-// const String ACTION_PAY_SUCCESS = "PaySuccess";
-// const String ACTION_PAY_FAIL = "PayFail";
-// const String ACTION_CANCEL = "Cancel";
-// const String ACTION_SEND = "Send";
+#include "telegram.h"
 
 Message Message::create(const String& message, const Transaction& tx) {
     Message msg;
