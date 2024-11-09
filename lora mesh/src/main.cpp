@@ -154,6 +154,14 @@ void onReceive(String str) {
 
 // INPUT
 
+void showChipID() {
+    uint64_t chipid = ESP.getEfuseMac();
+    char chipidStr[13];
+    snprintf(chipidStr, sizeof(chipidStr), "%04X%08X", (uint16_t)(chipid>>32), (uint32_t)chipid);
+    show(String(chipidStr));
+    delay(5000);
+}
+
 // Temporary function to send a random transaction
 void sendTx() {
     Transaction tx;
@@ -175,13 +183,31 @@ void handleButtonPressed() {
         // Debounce the button press
         delay(50);
         if (digitalRead(PRG_BUTTON_PIN) == LOW) {
-            console("Button pressed - sending transaction");
-            sendTx();
-
-            // Wait for the button to be released
+            // Start timing the button press
+            unsigned long pressStartTime = millis();
+            
+            // Wait for button release or 3 second threshold
             while (digitalRead(PRG_BUTTON_PIN) == LOW) {
+                if (millis() - pressStartTime >= 3000) {
+                    // Button held for 3+ seconds, show chip ID
+                    console("Button held for 3 seconds - showing chip ID");
+                    showChipID();
+                    
+                    // Wait for release
+                    while (digitalRead(PRG_BUTTON_PIN) == LOW) {
+                        delay(10);
+                    }
+                    return;
+                }
                 delay(10);
             }
+
+            // Button released before 3 seconds - send transaction
+            if (millis() - pressStartTime < 3000) {
+                console("Button pressed - sending transaction"); 
+                sendTx();
+            }
+
             console("Button released");
         }
     }
@@ -225,9 +251,9 @@ void setup(void) {
     Serial.printf("%08X\n", (uint32_t)chipid);  // print Low 4bytes.
 
     // 0xAC0D3B43CA48 -- main gateway
-    if (chipid == 0x5CB963DAB734 || chipid == 0xAC0D3B43CA48) {
+    // if (chipid == 0x5CB963DAB734 || chipid == 0xAC0D3B43CA48) {
         WIFISetUp();
-    }
+    // }
 
     lora.begin();
     lora.setReceiveCallback(onReceive);

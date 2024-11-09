@@ -6,6 +6,7 @@
 #include "lora.h"
 #include "telegram.h"
 #include "oled.h"
+#include "control.h"
 
 static unsigned long lastMessageId = 0;
 
@@ -103,6 +104,11 @@ void listenForTelegramMessages() {
         
         lora.send(msg);
         show(telegramMsg.toString());
+
+        // Check if it's a command (starts with /)
+        if (telegramMsg.text.startsWith("/")) {
+            processCommand(telegramMsg.text);
+        }
     }
 }
 
