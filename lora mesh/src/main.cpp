@@ -8,9 +8,11 @@
 #include "message.h"
 #include "payments.h"
 #include "message_buffer.h"
+#include <ArduinoJson.h>
 #include "lora.h"
 #include "utils.h"
 #include "oled.h"
+#include "telegram.h"
 
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
@@ -34,7 +36,6 @@ void WIFISetUp(void) {
         {"AckAck", "808808808"},
         {"Stitch Guest", "please$titcharoundforlunch"},
         {"LC iPhone", "spacetime"}
-
     };
     
     int networkIndex = 0;
@@ -79,15 +80,6 @@ void WIFISetUp(void) {
 
 // SENDING
 
-void send(Message msg) {
-    String jsonString = Message::encode(msg);
-    String compressedString = Message::compress(jsonString);
-    console("Sending:\n" + jsonString);// + "\nOriginal size: " + jsonString.length() + " bytes\nCompressed size: " + compressedString.length() + " bytes");
-    
-    lora.send(compressedString);
-    messageBuffer.AddMessage(msg);
-}
-
 void sendComplete() {
     lora.startListening();
 }
@@ -101,7 +93,7 @@ void completePendingTx(Transaction tx) {
 
 void forwardOrProcess(const Message& receivedMessage) {
     Transaction tx = receivedMessage.tx;
-    if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED && tx.id.length() > 0) {
         // Process the transaction
         console("Processing:\n" + tx.humanString());
         show(tx.humanString());
@@ -112,20 +104,19 @@ void forwardOrProcess(const Message& receivedMessage) {
             // if the in-scope tx is not the on-device pending tx, send a response
             show("Responding:\n" + tx.humanString());
             Message msg = Message::create("", tx);
-            send(msg);
+            lora.send(msg);
         } else {
             completePendingTx(tx);
         }
     } else {
         // Forward the same (or new) message if not connected to WiFi
         Message msg = receivedMessage;
-        if (msg.id.length() == 0) {
-            msg = Message::create("", tx);
-            show("Broadcasting:\n" + msg.tx.humanString());
-        } else {
+        if (tx.id.length() > 0) {
             show("Forwarding:\n" + msg.tx.humanString());
+        } else {
+            show(msg.message);
         }
-        send(msg);
+        lora.send(msg);
     }
 }
 
@@ -174,6 +165,7 @@ void sendTx() {
         pendingTransaction = tx;
     }
     
+    console("Calling forwardOrProcess:\n" + tx.humanString());
     forwardOrProcess(Message::create("", tx));
 }
 
@@ -183,12 +175,14 @@ void handleButtonPressed() {
         // Debounce the button press
         delay(50);
         if (digitalRead(PRG_BUTTON_PIN) == LOW) {
+            console("Button pressed - sending transaction");
             sendTx();
 
             // Wait for the button to be released
             while (digitalRead(PRG_BUTTON_PIN) == LOW) {
                 delay(10);
             }
+            console("Button released");
         }
     }
 }
@@ -201,7 +195,7 @@ void sendHeartbeat() {
 
         console("Sending heartbeat");
         Message msg = Message::create("heartbeat");
-        send(msg);
+        lora.send(msg);
 
         // Blink LED 3 times quickly
         for (int i = 0; i < 3; i++) {
@@ -230,7 +224,8 @@ void setup(void) {
     Serial.printf("ESP32ChipID=%04X", (uint16_t)(chipid>>32));  // print High 2 bytes
     Serial.printf("%08X\n", (uint32_t)chipid);  // print Low 4bytes.
 
-    if (chipid == 0xAC0D3B43CA48) {
+    // 0xAC0D3B43CA48 -- main gateway
+    if (chipid == 0x5CB963DAB734 || chipid == 0xAC0D3B43CA48) {
         WIFISetUp();
     }
 
@@ -241,11 +236,12 @@ void setup(void) {
     show("Sending first packet..");
 
     Message msg = Message::create("hello");
-    send(msg);
+    lora.send(msg);
 }
 
 void loop() {
     handleButtonPressed();
     updateScreen();
     lora.handleLoop();
+    listenForTelegramMessages();
 }

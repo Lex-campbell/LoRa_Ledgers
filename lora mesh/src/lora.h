@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 #include <RadioLib.h>
-
+#include "message.h"
 // SX1262 has the following connections:
 #define LORA_NSS_PIN    8
 #define LORA_RESET_PIN  12
@@ -28,7 +28,7 @@ public:
     void standby();
     void setReceiveCallback(void (*callback)(String));
     void startListening();
-    void send(String data);
+    void send(Message msg);
     void setFlag();
     void handleLoop();
     int16_t getRSSI();
