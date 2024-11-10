@@ -16,4 +16,7 @@ void blink();
 // Get the current time as a string
 String getTimeString();
 
+// Get the chip ID as a string
+String getChipID();
+
 #endif // UTILS_H

@@ -20,3 +20,10 @@ String getTimeString() {
     strftime(timeStr, sizeof(timeStr), "%H:%M:%S", timeinfo);
     return String(timeStr);
 }
+
+String getChipID() {
+    uint64_t chipid = ESP.getEfuseMac();
+    char chipID[13];
+    snprintf(chipID, sizeof(chipID), "%04X%08X", (uint16_t)(chipid>>32), (uint32_t)chipid);
+    return String(chipID);
+}

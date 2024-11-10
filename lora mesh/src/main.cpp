@@ -14,6 +14,7 @@
 #include "oled.h"
 #include "telegram.h"
 #include "settings.h"
+#include "control.h"
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
 
@@ -137,6 +138,7 @@ void onReceive(String str) {
     }
 
     if (receivedMessage.tx.id.length() == 0) {
+        processCommand(receivedMessage.message);
         show(receivedMessage.message);
         lora.startListening();
         return;
