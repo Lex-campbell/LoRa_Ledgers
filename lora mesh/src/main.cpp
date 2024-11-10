@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "oled.h"
 #include "telegram.h"
-
+#include "settings.h"
 #define VEXT_CTRL       36
 #define PRG_BUTTON_PIN  0
 
@@ -250,10 +250,16 @@ void setup(void) {
     Serial.printf("ESP32ChipID=%04X", (uint16_t)(chipid>>32));  // print High 2 bytes
     Serial.printf("%08X\n", (uint32_t)chipid);  // print Low 4bytes.
 
+    loadWiFiSetting();
+    if (digitalRead(PRG_BUTTON_PIN) == LOW) {
+        setWiFiEnabled(!shouldConnectWiFi);
+    }
+
     // 0xAC0D3B43CA48 -- main gateway
     // if (chipid == 0x5CB963DAB734 || chipid == 0xAC0D3B43CA48) {
+    if (shouldConnectWiFi) {
         WIFISetUp();
-    // }
+    }
 
     lora.begin();
     lora.setReceiveCallback(onReceive);

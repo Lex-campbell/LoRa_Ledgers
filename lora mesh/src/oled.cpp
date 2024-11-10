@@ -2,6 +2,7 @@
 #include "images.h"
 #include "lora.h"
 #include "message_buffer.h"
+#include <WiFi.h>
 
 // Global display object
 U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, /* clock=*/ OLED_SCL, /* data=*/ OLED_SDA, /* reset=*/ OLED_RESET);   // All Boards without Reset of the Display
@@ -78,7 +79,11 @@ void updateScreen() {
         if (pendingTransaction.state == Transaction::STATE_PENDING) {
             show("(O. O)\n\n" + pendingTransaction.humanStringState());
         } else {
-            show("(-. -)  zzz", false);
+            if (WiFi.status() == WL_CONNECTED) {
+                show("(*. *)", false);
+            } else {
+                show("(-. -)", false);
+            }
         }
     }
 }
