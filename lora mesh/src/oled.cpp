@@ -3,12 +3,14 @@
 #include "lora.h"
 #include "message_buffer.h"
 #include <WiFi.h>
+#include "utils.h"
 
 // Global display object
 U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, /* clock=*/ OLED_SCL, /* data=*/ OLED_SDA, /* reset=*/ OLED_RESET);   // All Boards without Reset of the Display
 
 static const unsigned long REFRESH_INTERVAL = 3000;
 static unsigned long LAST_REFRESH_TIME = 0;
+int lastAdcReading = 0;
 
 void logo() {
     display.clearBuffer();
@@ -61,13 +63,27 @@ void show(String data, bool showRssi) {
         y += lineHeight;
     }
     
-    int16_t rssi = lora.getRSSI();
-    float signalStrength = (abs(rssi) - 30) / 70.0 * 100;
-    signalStrength = 100.0f - signalStrength;  // Invert the scale
-    signalStrength = max(0.0f, min(100.0f, signalStrength));
-    
     if (showRssi) {
+        int16_t rssi = lora.getRSSI();
+        float signalStrength = (abs(rssi) - 30) / 70.0 * 100;
+        signalStrength = 100.0f - signalStrength;  // Invert the scale
+        signalStrength = max(0.0f, min(100.0f, signalStrength));
         display.drawStr(0, 64, ("Signal: " + String(int(signalStrength)) + "%").c_str());
+    } else {
+        float rawADC = analogRead(1);
+        float v_adc = rawADC * (3.3 / 4095.0);
+        float batteryVoltage = v_adc * 4.9;
+        float batteryPercentage = (batteryVoltage - 3.3) / (4.2 - 3.3) * 100;
+        batteryPercentage = max(0.0f, min(100.0f, batteryPercentage));
+        
+        // Only update display if reading is stable
+        if (abs(rawADC - lastAdcReading) <= 10) {
+            console("Battery ADC: " + String(rawADC) + 
+                    ", Voltage: " + String(batteryVoltage) + "V" +
+                    ", Percentage: " + String(batteryPercentage) + "%");
+            display.drawStr(0, 64, ("Battery: " + String(int(batteryPercentage)) + "%").c_str());
+        }
+        lastAdcReading = rawADC;
     }
 
     display.sendBuffer();

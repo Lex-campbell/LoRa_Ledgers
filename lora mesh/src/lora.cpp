@@ -23,12 +23,29 @@ void LoRa::begin() {
         return;
     }
 
-    // Configure radio parameters
+    // Range: 137 MHz to 1020 MHz depending on module
+    // Higher freq = shorter range but better penetration
     radio->setFrequency(868.0);
+
+    // Range: 6-12, higher = longer range but slower data rate
+    // SF8 gives good balance of range vs speed
     radio->setSpreadingFactor(8);
+
+    // Range: 5-8, higher = more error correction but lower data rate
+    // 4/7 provides good error correction while maintaining decent speed
     radio->setCodingRate(7);
+
+    // Common values: 7.8, 10.4, 15.6, 20.8, 31.25, 41.7, 62.5, 125, 250, 500 kHz
+    // Wider = faster data rate but shorter range and less noise immunity
     radio->setBandwidth(125.0);
+
+    // Range: -17 to 22 dBm
+    // Higher power = longer range but more power consumption
+    // 22 dBm is max allowed in most regions
     radio->setOutputPower(22);
+
+    // Used to identify network - only nodes with same sync word communicate
+    // Can be any value 0x00-0xFF
     radio->setSyncWord(0x45);
 
     // Set up the interrupt using direct pin attachment

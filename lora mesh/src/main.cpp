@@ -16,6 +16,7 @@
 #include "settings.h"
 #include "control.h"
 #define VEXT_CTRL       36
+#define ADC_CTRL        37
 #define PRG_BUTTON_PIN  0
 
 unsigned long LAST_HEARTBEAT_TIME = 0;
@@ -238,8 +239,14 @@ void sendHeartbeat() {
 void setup(void) {
     Serial.begin(115200);
 
+    //set the resolution to 12 bits (0-4096)
+    analogReadResolution(12);
+
     pinMode(VEXT_CTRL, OUTPUT); 
     digitalWrite(VEXT_CTRL, LOW); // Enable Vext power
+
+    pinMode(ADC_CTRL, OUTPUT); 
+    digitalWrite(ADC_CTRL, HIGH); // Enable ADC power
 
     // Initialize display
     display.begin();
